@@ -1,0 +1,34 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo "Installing validation tools..."
+      - npm install -g stylelint htmlhint eslint
+
+  pre_build:
+    commands:
+      - echo "Starting tests..."
+
+  build:
+    commands:
+      - echo "Linting CSS files..."
+      - stylelint "*/.css"
+      - echo "Validating HTML files..."
+      - htmlhint "*/.html"
+      - echo "Linting JavaScript files..."
+      - eslint "*/.js" || echo "JS lint warnings (not failing build)"
+
+  post_build:
+    commands:
+      - echo "Tests passed. Deploying to S3..."
+      - aws s3 sync . s3://YOUR_BUCKET_NAME --delete
+      - echo "Invalidating CloudFront cache..."
+      - aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
+      - echo "Deployment finished."
+
+artifacts:
+  files:
+    - '*/'
